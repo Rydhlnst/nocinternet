@@ -1,2 +1,3 @@
+import { Brand } from "@/components/brand"
 import { LoginForm } from "./login-form"
-export default function LoginPage() { return <main className="login"><section className="login-card"><div className="brand" style={{ padding: 0, marginBottom: 25 }}><div className="brand-mark">IC</div><div><strong style={{ color: "#10233f" }}>INTERNET CEPAT</strong><span>NOC OPERATIONS</span></div></div><h1>Masuk ke dashboard</h1><p>Kelola site, layanan, upgrade, dan maintenance dari satu ruang operasional.</p><LoginForm /></section></main> }
+export default function LoginPage() { return <main className="login"><section className="login-card"><Brand href="/" inverted /><h1>Masuk ke dashboard</h1><p>Kelola site, layanan, upgrade, dan maintenance dari satu ruang operasional.</p><LoginForm /></section></main> }
