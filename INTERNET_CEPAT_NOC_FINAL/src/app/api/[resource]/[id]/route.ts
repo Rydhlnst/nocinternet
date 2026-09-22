@@ -1,0 +1,10 @@
+import { NextResponse } from "next/server"
+import { eq } from "drizzle-orm"
+import { requireUser } from "@/lib/auth"
+import { auditLogs, tableMap } from "@/lib/db/schema"
+import type { Resource } from "@/lib/types"
+const resources: Resource[] = ["sites", "cids", "fabs", "upgrades", "maintenance"]
+function snakeToCamel(value: Record<string, unknown>) { return Object.fromEntries(Object.entries(value).map(([key, val]) => [key.replace(/_([a-z])/g, (_, c) => c.toUpperCase()), val])) }
+function camelToSnake(value: Record<string, unknown>) { return Object.fromEntries(Object.entries(value).map(([key, val]) => [key.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`), val])) }
+export async function PATCH(request: Request, { params }: { params: Promise<{ resource: string; id: string }> }) { const { resource, id } = await params; if (!resources.includes(resource as Resource)) return NextResponse.json({ error: "Resource tidak ditemukan" }, { status: 404 }); const { db, user } = await requireUser(); const table = tableMap[resource as keyof typeof tableMap] as any; const result = await db.update(table).set(snakeToCamel(await request.json()) as any).where(eq(table.id, id)).returning(); const data = (Array.isArray(result) ? result[0] : undefined) as Record<string, unknown> | undefined; if (!data) return NextResponse.json({ error: "Data tidak ditemukan" }, { status: 404 }); await db.insert(auditLogs).values({ userId: user.id, action: "update", module: resource, recordId: id }); return NextResponse.json({ data: camelToSnake(data) }) }
+export async function DELETE(_request: Request, { params }: { params: Promise<{ resource: string; id: string }> }) { const { resource, id } = await params; if (!resources.includes(resource as Resource)) return NextResponse.json({ error: "Resource tidak ditemukan" }, { status: 404 }); const { db, user } = await requireUser(); const table = tableMap[resource as keyof typeof tableMap] as any; await db.update(table).set({ archivedAt: new Date() }).where(eq(table.id, id)); await db.insert(auditLogs).values({ userId: user.id, action: "archive", module: resource, recordId: id }); return NextResponse.json({ ok: true }) }

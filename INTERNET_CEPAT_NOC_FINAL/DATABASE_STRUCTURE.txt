@@ -1,0 +1,25 @@
+INTERNET CEPAT NOC
+
+Database utama:
+- Site
+- CID
+- FAB
+- Upgrade
+- Maintenance
+- User
+
+Field Site:
+No
+Nama Site
+Site ID
+Provinsi
+Kota/Kabupaten
+VLAN
+Kapasitas Bandwidth
+Media Akses
+PIC Customer
+No Telp PIC
+PIC ISP
+Tanggal Aktivasi
+Status Layanan
+Keterangan

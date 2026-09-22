@@ -1,0 +1,10 @@
+import { z } from "zod"
+import type { Resource } from "@/lib/types"
+const base = { site_id: z.string().uuid("Site tidak valid"), status: z.string().min(1).max(40), notes: z.string().max(2000).nullable().optional() }
+export const schemas: Record<Exclude<Resource, "sites">, z.ZodObject<Record<string, z.ZodTypeAny>>> = {
+  cids: z.object({ ...base, cid_number: z.string().min(1).max(100), service_type: z.string().max(100).optional(), bandwidth: z.string().max(100).optional(), activation_date: z.string().nullable().optional(), pic: z.string().max(150).optional() }),
+  fabs: z.object({ ...base, fab_number: z.string().min(1).max(100), request_date: z.string().nullable().optional(), target_date: z.string().nullable().optional(), completion_date: z.string().nullable().optional(), pic: z.string().max(150).optional() }),
+  upgrades: z.object({ ...base, current_bandwidth: z.string().min(1).max(100), requested_bandwidth: z.string().min(1).max(100), request_date: z.string().nullable().optional(), target_date: z.string().nullable().optional(), completion_date: z.string().nullable().optional(), pic: z.string().max(150).optional() }),
+  maintenance: z.object({ ...base, maintenance_type: z.string().min(1).max(120), scheduled_at: z.string().nullable().optional(), started_at: z.string().nullable().optional(), completed_at: z.string().nullable().optional(), impact: z.string().max(300).optional(), pic_vendor: z.string().max(150).optional() })
+}
+export const siteSchema = z.object({ nama_site: z.string().min(1).max(160), site_id: z.string().min(1).max(80), provinsi: z.string().min(1).max(100), kota_kabupaten: z.string().min(1).max(100), vlan: z.string().max(50).optional(), kapasitas_bandwidth: z.string().max(100).optional(), media_akses: z.string().max(100).optional(), pic_customer: z.string().max(150).optional(), no_telp_pic: z.string().max(40).optional(), pic_isp: z.string().max(150).optional(), tanggal_aktivasi: z.string().nullable().optional(), status_layanan: z.string().min(1).max(40), keterangan: z.string().max(2000).nullable().optional() })

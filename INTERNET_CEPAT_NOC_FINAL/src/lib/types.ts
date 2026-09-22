@@ -1,0 +1,16 @@
+export type Role = "admin" | "staff"
+export type Resource = "sites" | "cids" | "fabs" | "upgrades" | "maintenance"
+
+export type Site = { id: string; no: number; nama_site: string; site_id: string; provinsi: string; kota_kabupaten: string; vlan: string; kapasitas_bandwidth: string; media_akses: string; pic_customer: string; no_telp_pic: string; pic_isp: string; tanggal_aktivasi: string | null; status_layanan: string; keterangan: string | null; created_at: string }
+export type RecordRow = { id: string; site_id: string; status: string; notes: string | null; created_at: string; [key: string]: unknown }
+
+export const resourceLabels: Record<Resource, string> = { sites: "Site Database", cids: "CID Tracking", fabs: "FAB / SO Tracking", upgrades: "Upgrade Bandwidth", maintenance: "Maintenance" }
+export const resourceFields: Record<Resource, { key: string; label: string; type?: string; required?: boolean }[]> = {
+  sites: [
+    { key: "nama_site", label: "Nama Site", required: true }, { key: "site_id", label: "Site ID", required: true }, { key: "provinsi", label: "Provinsi", required: true }, { key: "kota_kabupaten", label: "Kota/Kabupaten", required: true }, { key: "vlan", label: "VLAN" }, { key: "kapasitas_bandwidth", label: "Kapasitas Bandwidth" }, { key: "media_akses", label: "Media Akses" }, { key: "pic_customer", label: "PIC Customer" }, { key: "no_telp_pic", label: "No Telp PIC" }, { key: "pic_isp", label: "PIC ISP" }, { key: "tanggal_aktivasi", label: "Tanggal Aktivasi", type: "date" }, { key: "status_layanan", label: "Status Layanan", required: true }, { key: "keterangan", label: "Keterangan", type: "textarea" }
+  ],
+  cids: [{ key: "cid_number", label: "CID Number", required: true }, { key: "service_type", label: "Service Type" }, { key: "bandwidth", label: "Bandwidth" }, { key: "activation_date", label: "Activation Date", type: "date" }, { key: "status", label: "Status", required: true }, { key: "pic", label: "PIC" }, { key: "notes", label: "Notes", type: "textarea" }],
+  fabs: [{ key: "fab_number", label: "FAB / SO Number", required: true }, { key: "request_date", label: "Request Date", type: "date" }, { key: "target_date", label: "Target Date", type: "date" }, { key: "completion_date", label: "Completion Date", type: "date" }, { key: "status", label: "Status", required: true }, { key: "pic", label: "PIC" }, { key: "notes", label: "Notes", type: "textarea" }],
+  upgrades: [{ key: "current_bandwidth", label: "Current Bandwidth", required: true }, { key: "requested_bandwidth", label: "Requested Bandwidth", required: true }, { key: "request_date", label: "Request Date", type: "date" }, { key: "target_date", label: "Target Date", type: "date" }, { key: "completion_date", label: "Completion Date", type: "date" }, { key: "status", label: "Status", required: true }, { key: "pic", label: "PIC" }, { key: "notes", label: "Notes", type: "textarea" }],
+  maintenance: [{ key: "maintenance_type", label: "Maintenance Type", required: true }, { key: "scheduled_at", label: "Scheduled Date", type: "date" }, { key: "started_at", label: "Started Date", type: "date" }, { key: "completed_at", label: "Completed Date", type: "date" }, { key: "status", label: "Status", required: true }, { key: "impact", label: "Impact" }, { key: "pic_vendor", label: "PIC / Vendor" }, { key: "notes", label: "Notes", type: "textarea" }]
+}
