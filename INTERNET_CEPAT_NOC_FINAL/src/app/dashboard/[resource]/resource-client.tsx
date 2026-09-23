@@ -30,6 +30,14 @@ const FILTER_LABELS: Record<string, string> = {
   impact: "Impact",
 }
 
+const DEFAULT_STATUSES: Record<Resource, string[]> = {
+  sites: ["Aktif", "Tidak Aktif"],
+  cids: ["Aktif", "Tidak Aktif"],
+  fabs: ["Open", "In Progress", "Completed", "Cancelled"],
+  upgrades: ["Requested", "In Progress", "Completed", "On Hold", "Cancelled"],
+  maintenance: ["Scheduled", "In Progress", "Completed", "Cancelled"],
+}
+
 function schemaFor(r: Resource) { return r === "sites" ? siteSchema : schemas[r] }
 function fieldMessage(j: ApiError, fallback: string) { return j.details ? validationMessage(j.details) : (j.error ?? fallback) }
 
@@ -101,6 +109,7 @@ export function ResourceClient({ resource, title, fields }: { resource: Resource
   const [adding, setAdding] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [archivingId, setArchivingId] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const tableCols = fields.filter(f => f.type !== "textarea")
@@ -189,6 +198,7 @@ export function ResourceClient({ resource, title, fields }: { resource: Resource
   async function archive(row: Row) {
     if (!window.confirm("Arsipkan data ini? Data tidak akan tampil di daftar aktif.")) return
     try {
+      setArchivingId(String(row.id))
       const res = await fetch(`/api/${resource}/${row.id}`, { method: "DELETE" })
       const json = await res.json() as ApiError
       if (!res.ok) throw new Error(fieldMessage(json, "Data gagal diarsipkan."))
@@ -196,6 +206,8 @@ export function ResourceClient({ resource, title, fields }: { resource: Resource
       void load()
     } catch (cause) {
       showToast("Gagal mengarsipkan", cause instanceof Error ? cause.message : "Coba lagi.", "error")
+    } finally {
+      setArchivingId(null)
     }
   }
 
@@ -205,7 +217,7 @@ export function ResourceClient({ resource, title, fields }: { resource: Resource
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
         <div>
           <div className="eyebrow">Operational Register</div>
-          <h1 style={{ margin: "4px 0 4px", fontSize: 26, lineHeight: 1.2, fontWeight: 800 }}>{title}</h1>
+          <h1 style={{ margin: "4px 0 4px", fontSize: 24, lineHeight: 1.2, fontWeight: 700 }}>{title}</h1>
           <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{subtitle}</p>
         </div>
         <div style={{ display: "flex", gap: 9, flexShrink: 0, flexWrap: "wrap", paddingTop: 2 }}>
@@ -220,33 +232,31 @@ export function ResourceClient({ resource, title, fields }: { resource: Resource
         </div>
       </div>
 
-      {/* 2. KPI Cards — top, horizontal layout */}
-      {kpiEntries.length > 0 && (
-        <div className="kpi-grid" style={{ marginBottom: 24, marginTop: 0 }}>
-          <div className="kpi-card" style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: "#FFF1E9", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <RiDatabaseLine size={24} style={{ color: "var(--accent)" }} />
+      {/* 2. KPI Cards — always visible, 0 when no data */}
+      <div className="kpi-grid" style={{ marginBottom: 20 }}>
+        <div className="kpi-card">
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: "#FFF1E9", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <RiDatabaseLine size={20} style={{ color: "var(--accent)" }} />
+          </div>
+          <div>
+            <div className="kpi-number">{grandTotal}</div>
+            <div className="kpi-label">Total {resourceButtonLabel[resource]}</div>
+            <div className="kpi-pct">Seluruh data aktif</div>
+          </div>
+        </div>
+        {(kpiEntries.length > 0 ? kpiEntries : DEFAULT_STATUSES[resource].map(s => [s, 0] as [string, number])).map(([status, cnt]) => (
+          <div key={status} className="kpi-card">
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: kpiIconBg(status), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <KpiIcon status={status} />
             </div>
             <div>
-              <div className="kpi-number" style={{ fontSize: 32 }}>{grandTotal}</div>
-              <div className="kpi-label">Total {resourceButtonLabel[resource]}</div>
-              <div className="kpi-pct">Seluruh data aktif</div>
+              <div className="kpi-number">{cnt}</div>
+              <div className="kpi-label">{status}</div>
+              <div className="kpi-pct">{grandTotal > 0 ? `${((cnt / grandTotal) * 100).toFixed(1)}% dari total` : "—"}</div>
             </div>
           </div>
-          {kpiEntries.map(([status, cnt]) => (
-            <div key={status} className="kpi-card" style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: kpiIconBg(status), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <KpiIcon status={status} />
-              </div>
-              <div>
-                <div className="kpi-number" style={{ fontSize: 32 }}>{cnt}</div>
-                <div className="kpi-label">{status}</div>
-                <div className="kpi-pct">{grandTotal > 0 ? `${((cnt / grandTotal) * 100).toFixed(1)}% dari total` : ""}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* 3. Standalone search bar */}
       <div style={{ position: "relative", marginBottom: 14 }}>
@@ -291,15 +301,18 @@ export function ResourceClient({ resource, title, fields }: { resource: Resource
       {/* 5. Panel: section-header + table + pagination */}
       <div className="panel">
         {/* Section header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 20px", borderBottom: "1px solid var(--line)" }}>
-          <span style={{ fontWeight: 700, fontSize: 13 }}>Daftar {title}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--line)" }}>
+          <span style={{ fontWeight: 600, fontSize: 13 }}>Daftar {title}</span>
           {total > 0 && <span style={{ fontSize: 12, color: "var(--muted)" }}>Menampilkan {startRow}–{endRow} dari {total} data</span>}
         </div>
 
         {/* Table */}
         <div className="table-wrap">
           {loading ? (
-            <div className="empty">Memuat data...</div>
+            <div className="empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "52px 20px" }}>
+              <span className="spinner" style={{ width: 24, height: 24 }} />
+              <span>Memuat data...</span>
+            </div>
           ) : rows.length === 0 ? (
             <div className="empty">
               {hasAnyFilter ? "Tidak ada data yang sesuai filter." : "Belum ada data. Tambahkan record pertama untuk memulai."}
@@ -329,8 +342,8 @@ export function ResourceClient({ resource, title, fields }: { resource: Resource
                         <button className="btn btn-secondary" style={{ padding: "5px 8px" }} title="Edit" onClick={() => setEditing(row)}>
                           <RiEditLine size={13} />
                         </button>
-                        <button className="btn btn-danger" style={{ padding: "5px 8px" }} title="Arsipkan" onClick={() => void archive(row)}>
-                          <RiDeleteBinLine size={13} />
+                        <button className="btn btn-danger" style={{ padding: "5px 8px", minWidth: 29 }} title="Arsipkan" disabled={archivingId === String(row.id)} onClick={() => void archive(row)}>
+                          {archivingId === String(row.id) ? <span className="spinner" style={{ width: 13, height: 13, borderColor: "rgba(163,79,79,.2)", borderTopColor: "#A34F4F" }} /> : <RiDeleteBinLine size={13} />}
                         </button>
                       </div>
                     </td>
@@ -568,7 +581,9 @@ function RecordForm({ resource, fields, initial, onClose, onSaved }: { resource:
           })}
           {error && <div className="error wide">{error}</div>}
           <div className="wide">
-            <button className="btn btn-primary" disabled={saving}>{saving ? "Menyimpan..." : "Simpan data"}</button>
+            <button className="btn btn-primary" disabled={saving}>
+              {saving ? <><span className="spinner" style={{ width: 14, height: 14, borderColor: "rgba(255,255,255,.25)", borderTopColor: "#fff" }} />Menyimpan...</> : "Simpan data"}
+            </button>
           </div>
         </form>
       </div>

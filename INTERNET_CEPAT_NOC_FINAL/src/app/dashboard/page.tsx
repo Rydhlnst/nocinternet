@@ -37,7 +37,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <span className="eyebrow">OPERATIONAL REGISTER</span>
-        <h1 style={{ margin: "6px 0 4px", fontSize: 28, fontWeight: 800, letterSpacing: "-.03em", color: "var(--ink)" }}>
+        <h1 style={{ margin: "6px 0 4px", fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", color: "var(--ink)" }}>
           Dashboard NOC
         </h1>
         <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Module panels — 3 + 2 grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+      <div className="module-panels-3">
         <ModulePanel
           href="/dashboard/sites"
           icon={<RiMapPin2Line size={20} />}
@@ -134,7 +134,7 @@ export default async function DashboardPage() {
           badgeBg="#EFF3F6"
         />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+      <div className="module-panels-2">
         <ModulePanel
           href="/dashboard/upgrades"
           icon={<RiArrowUpCircleLine size={20} />}
@@ -180,7 +180,7 @@ function ModuleKpi({
           {icon}
         </div>
         <div>
-          <div className="kpi-number" style={{ fontSize: 32 }}>{total}</div>
+          <div className="kpi-number">{total}</div>
           <div className="kpi-label">{label}</div>
           <div className="kpi-pct">{sub}</div>
         </div>
@@ -209,7 +209,7 @@ function ModulePanel({
       </div>
       <div style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <span style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.04em", color: "var(--ink)" }}>{stat}</span>
+          <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.03em", color: "var(--ink)" }}>{stat}</span>
           <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 6 }}>{statLabel}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
