@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeAll } from "vitest"
+import { loadEnvConfig } from "@next/env"
 import { getDb } from "@/lib/db"
 import { sql } from "drizzle-orm"
 
@@ -38,5 +39,25 @@ describe("Database connectivity", () => {
     const result = await db.execute(sql`SELECT COUNT(*) AS total FROM fabs`)
     const row = result.rows?.[0] as { total: string } | undefined
     expect(Number(row?.total)).toBeGreaterThanOrEqual(0)
+  }, 15000)
+
+  it("OK DB-04 has the FAB workflow schema required by the FAB API", async () => {
+    if (!hasDb) return
+    const db = getDb()
+    const result = await db.execute(sql`
+      SELECT
+        EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'fabs'
+            AND column_name = 'workflow_status'
+        ) AS has_workflow_status,
+        to_regclass('public.fab_service_requests') IS NOT NULL AS has_service_requests
+    `)
+    const row = result.rows?.[0] as { has_workflow_status: boolean; has_service_requests: boolean } | undefined
+
+    expect(row?.has_workflow_status).toBe(true)
+    expect(row?.has_service_requests).toBe(true)
   }, 15000)
 })
