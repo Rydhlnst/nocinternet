@@ -37,12 +37,20 @@ export default async function DashboardPage() {
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <span className="eyebrow">OPERATIONAL REGISTER</span>
-        <h1 style={{ margin: "6px 0 4px", fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", color: "var(--ink)" }}>
-          Dashboard NOC
-        </h1>
-        <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
-          Selamat datang, {firstName}. Ringkasan seluruh operasional jaringan aktif.
-        </p>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <h1 style={{ margin: "6px 0 4px", fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", color: "var(--ink)" }}>
+              Dashboard NOC
+            </h1>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>
+              Selamat datang, {firstName}. Ringkasan seluruh operasional jaringan aktif.
+            </p>
+          </div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 999, background: "#E9F9EF", border: "1px solid #BBF7D0", fontSize: 11, fontWeight: 500, color: "#15803D", flexShrink: 0, marginTop: 6 }}>
+            <RiDatabaseLine size={12} />
+            Database terhubung
+          </div>
+        </div>
       </div>
 
       {/* KPI cards — one per module */}

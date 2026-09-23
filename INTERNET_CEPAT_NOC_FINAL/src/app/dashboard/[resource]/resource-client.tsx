@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import * as XLSX from "xlsx"
 import {
   RiSearchLine, RiUploadLine, RiDownloadLine, RiAddLine,
@@ -94,7 +94,8 @@ function pageRange(cur: number, total: number): (number | -1)[] {
   return [1, -1, cur - 1, cur, cur + 1, -1, total]
 }
 
-export function ResourceClient({ resource, title, fields }: { resource: Resource; title: string; fields: Field[] }) {
+type CustomFormProps = { initial: Row | null; onClose: () => void; onSaved: () => void }
+export function ResourceClient({ resource, title, fields, customForm }: { resource: Resource; title: string; fields: Field[]; customForm?: (props: CustomFormProps) => React.ReactNode }) {
   const { showToast } = useToast()
   const [rows, setRows] = useState<Row[]>([])
   const [total, setTotal] = useState(0)
@@ -388,13 +389,9 @@ export function ResourceClient({ resource, title, fields }: { resource: Resource
 
       {/* Record modal */}
       {(adding || editing) && (
-        <RecordForm
-          resource={resource}
-          fields={fields}
-          initial={editing}
-          onClose={() => { setAdding(false); setEditing(null) }}
-          onSaved={() => { setAdding(false); setEditing(null); void load() }}
-        />
+        customForm
+          ? customForm({ initial: editing, onClose: () => { setAdding(false); setEditing(null) }, onSaved: () => { setAdding(false); setEditing(null); void load() } })
+          : <RecordForm resource={resource} fields={fields} initial={editing} onClose={() => { setAdding(false); setEditing(null) }} onSaved={() => { setAdding(false); setEditing(null); void load() }} />
       )}
     </>
   )

@@ -7,7 +7,29 @@ export const profiles = pgTable("profiles", { id: text("id").primaryKey().refere
 export const sites = pgTable("sites", { id: uuid("id").defaultRandom().primaryKey(), no: integer("no").generatedAlwaysAsIdentity(), namaSite: text("nama_site").notNull(), siteId: text("site_id").notNull(), provinsi: text("provinsi").notNull(), kotaKabupaten: text("kota_kabupaten").notNull(), vlan: text("vlan"), kapasitasBandwidth: text("kapasitas_bandwidth"), mediaAkses: text("media_akses"), picCustomer: text("pic_customer"), noTelpPic: text("no_telp_pic"), picIsp: text("pic_isp"), tanggalAktivasi: date("tanggal_aktivasi"), statusLayanan: text("status_layanan").notNull().default("Aktif"), keterangan: text("keterangan"), archivedAt: timestamp("archived_at", { withTimezone: true }), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow() }, t => ({ siteIdx: uniqueIndex("sites_site_id_idx").on(t.siteId), statusIdx: index("sites_status_idx").on(t.statusLayanan), createdIdx: index("sites_created_idx").on(t.createdAt) }))
 const operational = { id: uuid("id").defaultRandom().primaryKey(), siteId: uuid("site_id").notNull().references(() => sites.id, { onDelete: "restrict" }), status: text("status").notNull(), pic: text("pic"), notes: text("notes"), archivedAt: timestamp("archived_at", { withTimezone: true }), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow() }
 export const cids = pgTable("cids", { ...operational, cidNumber: text("cid_number").notNull().unique(), customer: text("customer"), serviceType: text("service_type"), bandwidth: text("bandwidth"), vlan: text("vlan"), ipAddress: text("ip_address"), activationDate: date("activation_date") }, t => ({ siteIdx: index("cids_site_idx").on(t.siteId), statusIdx: index("cids_status_idx").on(t.status) }))
-export const fabs = pgTable("fabs", { ...operational, fabNumber: text("fab_number").notNull().unique(), requestDate: date("request_date"), targetDate: date("target_date"), completionDate: date("completion_date") }, t => ({ siteIdx: index("fabs_site_idx").on(t.siteId), statusIdx: index("fabs_status_idx").on(t.status) }))
+export const fabs = pgTable("fabs", { ...operational,
+  fabNumber: text("fab_number").notNull().unique(),
+  requestDate: date("request_date"), targetDate: date("target_date"), completionDate: date("completion_date"),
+  // Step 1: Informasi Kontrak
+  contractDate: date("contract_date"), jobType: text("job_type"), previousFabNumber: text("previous_fab_number"),
+  // Step 2: Informasi Perusahaan
+  companyName: text("company_name"), companyGroup: text("company_group"), businessType: text("business_type"),
+  companyAddress: text("company_address"), companyCity: text("company_city"), companyProvinsi: text("company_provinsi"),
+  postalCode: text("postal_code"), website: text("website"), companyEmail: text("company_email"),
+  npwp: text("npwp"), companyPhone: text("company_phone"),
+  // Step 3: PIC & Kontak
+  picName: text("pic_name"), picBirthPlace: text("pic_birth_place"), picBirthDate: date("pic_birth_date"),
+  picPosition: text("pic_position"), picPhoneCode: text("pic_phone_code"), picPhoneNumber: text("pic_phone_number"),
+  picMobileCode: text("pic_mobile_code"), picMobileNumber: text("pic_mobile_number"),
+  picIdType: text("pic_id_type"), picIdNumber: text("pic_id_number"), picIdExpiry: date("pic_id_expiry"),
+  // Step 4: Jenis Layanan
+  serviceType: text("service_type"), bandwidthUp: text("bandwidth_up"), bandwidthDown: text("bandwidth_down"),
+  billingType: text("billing_type"), ipType: text("ip_type"), ipAddress: text("ip_address"), slaLevel: text("sla_level"),
+  // Step 5: Lokasi & Teknis (site_id from operational base)
+  installAddress: text("install_address"), installCity: text("install_city"), installProvinsi: text("install_provinsi"),
+  // Step 6: RFS
+  rfsDate: date("rfs_date"),
+}, t => ({ siteIdx: index("fabs_site_idx").on(t.siteId), statusIdx: index("fabs_status_idx").on(t.status) }))
 export const upgrades = pgTable("upgrades", { ...operational, cidId: uuid("cid_id").references(() => cids.id, { onDelete: "set null" }), currentBandwidth: text("current_bandwidth").notNull(), requestedBandwidth: text("requested_bandwidth").notNull(), requestDate: date("request_date"), targetDate: date("target_date"), completionDate: date("completion_date") }, t => ({ siteIdx: index("upgrades_site_idx").on(t.siteId), statusIdx: index("upgrades_status_idx").on(t.status), cidIdx: index("upgrades_cid_idx").on(t.cidId) }))
 export const maintenance = pgTable("maintenance", { ...operational, no: integer("no").generatedAlwaysAsIdentity(), cidId: uuid("cid_id").references(() => cids.id, { onDelete: "set null" }), maintenanceType: text("maintenance_type").notNull(), scheduledAt: date("scheduled_at"), startedAt: date("started_at"), completedAt: date("completed_at"), impact: text("impact"), picVendor: text("pic_vendor") }, t => ({ siteIdx: index("maintenance_site_idx").on(t.siteId), statusIdx: index("maintenance_status_idx").on(t.status), cidIdx: index("maintenance_cid_idx").on(t.cidId) }))
 export const auditLogs = pgTable("audit_logs", { id: uuid("id").defaultRandom().primaryKey(), userId: text("user_id").notNull().references(() => authUser.id, { onDelete: "cascade" }), action: text("action").notNull(), module: text("module").notNull(), recordId: uuid("record_id"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow() }, t => ({ moduleIdx: index("audit_logs_module_idx").on(t.module), userIdx: index("audit_logs_user_idx").on(t.userId) }))
