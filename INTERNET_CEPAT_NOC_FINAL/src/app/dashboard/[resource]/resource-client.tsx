@@ -395,9 +395,8 @@ function CidPicker({ initialCidId, onSelect }: { initialCidId?: string; onSelect
   const [query, setQuery] = useState(""); const [options, setOptions] = useState<CidOption[]>([]); const [selected, setSelected] = useState<CidOption | null>(null); const [open, setOpen] = useState(false)
   useEffect(() => {
     if (!initialCidId) return
-    fetch(`/api/cids?limit=50`).then(r => r.json()).then((json: { data?: CidOption[] }) => {
-      const cid = (json.data ?? []).find(c => c.id === initialCidId)
-      if (cid) { setSelected(cid); onSelect(cid) }
+    fetch(`/api/cids/${initialCidId}`).then(r => r.json()).then((json: { data?: CidOption }) => {
+      if (json.data) { setSelected(json.data); onSelect(json.data) }
     }).catch(() => {})
   }, [initialCidId])
   async function search(value: string) { setQuery(value); const res = await fetch(`/api/cids?q=${encodeURIComponent(value)}&limit=20`); const json = await res.json() as { data?: CidOption[] }; setOptions(json.data ?? []); setOpen(true) }
@@ -448,9 +447,8 @@ function SitePicker({ initialSiteId }: { initialSiteId?: string }) {
   const [query, setQuery] = useState(""); const [options, setOptions] = useState<SiteOption[]>([]); const [selected, setSelected] = useState<SiteOption | null>(null); const [open, setOpen] = useState(false)
   useEffect(() => {
     if (!initialSiteId) return
-    fetch("/api/sites").then(r => r.json()).then((json: { data?: SiteOption[] }) => {
-      const site = (json.data ?? []).find(s => s.id === initialSiteId)
-      if (site) setSelected(site)
+    fetch(`/api/sites/${initialSiteId}`).then(r => r.json()).then((json: { data?: SiteOption }) => {
+      if (json.data) setSelected(json.data)
     }).catch(() => {})
   }, [initialSiteId])
   async function search(value: string) { setQuery(value); const res = await fetch(`/api/sites?q=${encodeURIComponent(value)}`); const json = await res.json() as { data?: SiteOption[] }; setOptions(json.data ?? []); setOpen(true) }
