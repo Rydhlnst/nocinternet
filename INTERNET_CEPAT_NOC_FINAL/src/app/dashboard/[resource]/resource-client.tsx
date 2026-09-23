@@ -6,9 +6,7 @@ import {
   RiSearchLine, RiUploadLine, RiDownloadLine, RiAddLine,
   RiEditLine, RiDeleteBinLine, RiCloseLine,
   RiArrowLeftSLine, RiArrowRightSLine,
-  RiDatabaseLine, RiCheckboxCircleLine, RiTimeLine,
-  RiHourglassLine, RiPauseCircleLine, RiCheckDoubleLine,
-  RiCalendarLine,
+  RiRefreshLine,
 } from "react-icons/ri"
 import { useToast } from "@/components/toast"
 import { schemas, siteSchema, validationMessage } from "@/lib/validation"
@@ -54,38 +52,27 @@ function formatCell(value: unknown, field: Field): string {
 function StatusBadge({ value }: { value: string }) {
   const slug = value.toLowerCase().replaceAll(" ", "-").replaceAll("_", "-")
   return (
-    <span className={`status status-${slug}`} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
+    <span className={`status status-${slug}`}>
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
       {value}
     </span>
   )
 }
 
-function KpiIcon({ status }: { status: string }) {
+function statusTone(status: string): string {
   const s = status.toLowerCase()
-  if (s.includes("aktif") || (s.includes("active") && !s.includes("inactive")))
-    return <RiCheckboxCircleLine size={22} style={{ color: "#16A34A" }} />
-  if (s.includes("progress")) return <RiTimeLine size={22} style={{ color: "#1D4ED8" }} />
-  if (s.includes("pending") || s.includes("requested") || s.includes("open"))
-    return <RiHourglassLine size={22} style={{ color: "#D97706" }} />
-  if (s.includes("hold")) return <RiPauseCircleLine size={22} style={{ color: "#C2410C" }} />
-  if (s.includes("closed") || s.includes("cancel") || s.includes("inactive") || s.includes("tidak"))
-    return <RiCheckDoubleLine size={22} style={{ color: "#6B7280" }} />
-  if (s.includes("schedul") || s.includes("planned"))
-    return <RiCalendarLine size={22} style={{ color: "#7C3AED" }} />
-  return <RiDatabaseLine size={22} style={{ color: "var(--muted)" }} />
+  if (s.includes("aktif") && !s.includes("tidak")) return "var(--success)"
+  if (s.includes("active") && !s.includes("inactive")) return "var(--success)"
+  if (s.includes("completed") || s === "done") return "var(--success)"
+  if (s.includes("progress") || s.includes("schedul") || s.includes("planned")) return "var(--info)"
+  if (s.includes("pending") || s.includes("requested") || s.includes("open")) return "var(--warning)"
+  if (s.includes("hold")) return "var(--warning)"
+  if (s.includes("cancel") || s.includes("inactive") || s.includes("tidak")) return "var(--danger)"
+  return "var(--neutral)"
 }
 
-function kpiIconBg(status: string): string {
-  const s = status.toLowerCase()
-  if (s.includes("aktif") || (s.includes("active") && !s.includes("inactive"))) return "#DCFCE7"
-  if (s.includes("progress")) return "#DBEAFE"
-  if (s.includes("pending") || s.includes("requested") || s.includes("open")) return "#FEF9C3"
-  if (s.includes("hold")) return "#FED7AA"
-  if (s.includes("closed") || s.includes("cancel") || s.includes("inactive") || s.includes("tidak")) return "#F3F4F6"
-  if (s.includes("schedul") || s.includes("planned")) return "#EDE9FE"
-  return "#F3F6F8"
-}
+// Fields that should be rendered in monospace as technical identifiers.
+const MONO_FIELDS = new Set(["site_id", "site_code", "cid_number", "ip_address", "fab_number", "vlan", "no"])
 
 function pageRange(cur: number, total: number): (number | -1)[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
@@ -212,16 +199,25 @@ export function ResourceClient({ resource, title, fields, customForm }: { resour
     }
   }
 
+  // Always show the module's default status set; overlay real backend counts.
+  // Extra statuses returned by the backend (outside defaults) are appended.
+  const defaultStatuses = DEFAULT_STATUSES[resource]
+  const extraStatuses = Object.keys(statusCounts).filter(s => !defaultStatuses.includes(s))
+  const kpiList: [string, number][] = [
+    ...defaultStatuses.map(s => [s, statusCounts[s] ?? 0] as [string, number]),
+    ...extraStatuses.map(s => [s, statusCounts[s]] as [string, number]),
+  ]
+
   return (
     <>
-      {/* 1. Header: eyebrow + title/subtitle left | buttons right */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-        <div>
-          <div className="eyebrow">Operational Register</div>
-          <h1 style={{ margin: "4px 0 4px", fontSize: 24, lineHeight: 1.2, fontWeight: 700 }}>{title}</h1>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{subtitle}</p>
+      {/* 1. Page header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0 }}>
+          <span className="eyebrow">Operational Register</span>
+          <h1 className="page-title">{title}</h1>
+          <p className="page-sub">{subtitle}</p>
         </div>
-        <div style={{ display: "flex", gap: 9, flexShrink: 0, flexWrap: "wrap", paddingTop: 2 }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
           <label className="btn btn-secondary">
             <RiUploadLine size={14} /> Import Excel
             <input hidden type="file" accept=".xlsx,.xls,.csv" onChange={e => { const f = e.target.files?.[0]; if (f) void importFile(f); e.currentTarget.value = "" }} />
@@ -233,96 +229,145 @@ export function ResourceClient({ resource, title, fields, customForm }: { resour
         </div>
       </div>
 
-      {/* 2. KPI Cards — always visible, 0 when no data */}
-      <div className="kpi-grid" style={{ marginBottom: 20 }}>
-        <div className="kpi-card">
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: "#FFF1E9", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <RiDatabaseLine size={20} style={{ color: "var(--accent)" }} />
-          </div>
-          <div>
-            <div className="kpi-number">{grandTotal}</div>
-            <div className="kpi-label">Total {resourceButtonLabel[resource]}</div>
-            <div className="kpi-pct">Seluruh data aktif</div>
-          </div>
-        </div>
-        {(kpiEntries.length > 0 ? kpiEntries : DEFAULT_STATUSES[resource].map(s => [s, 0] as [string, number])).map(([status, cnt]) => (
-          <div key={status} className="kpi-card">
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: kpiIconBg(status), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <KpiIcon status={status} />
-            </div>
-            <div>
-              <div className="kpi-number">{cnt}</div>
-              <div className="kpi-label">{status}</div>
-              <div className="kpi-pct">{grandTotal > 0 ? `${((cnt / grandTotal) * 100).toFixed(1)}% dari total` : "—"}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 3. Standalone search bar */}
-      <div style={{ position: "relative", marginBottom: 14 }}>
-        <RiSearchLine size={15} style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", pointerEvents: "none" }} />
-        <input
-          className="input"
-          style={{ paddingLeft: 40, width: "100%", minWidth: 0, borderRadius: 10, height: 42, fontSize: 13 }}
-          placeholder={`Cari ${title.toLowerCase()}, customer, site ID, IP address...`}
-          value={q}
-          onChange={e => handleSearch(e.target.value)}
-        />
-      </div>
-
-      {/* 4. Filter row — labeled dropdowns */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 16 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>Status</span>
-          <select className="input" style={{ width: "auto", minWidth: 150, height: 36, fontSize: 12 }} value={statusFilter} onChange={e => handleStatus(e.target.value)}>
-            <option value="">Semua Status</option>
-            {Object.keys(statusCounts).sort().map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-        {Object.entries(filterCounts).map(([key, counts]) => (
-          <div key={key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>{FILTER_LABELS[key] ?? key}</span>
-            <select className="input" style={{ width: "auto", minWidth: 150, height: 36, fontSize: 12 }} value={extraFilters[key] ?? ""} onChange={e => handleExtraFilter(key, e.target.value)}>
-              <option value="">Semua</option>
-              {Object.keys(counts).sort().map(v => <option key={v} value={v}>{v} ({counts[v]})</option>)}
-            </select>
-          </div>
-        ))}
-        {hasAnyFilter && (
-          <div>
-            <button className="btn btn-secondary" style={{ height: 36, fontSize: 12 }} onClick={reset}>
-              <RiCloseLine size={14} /> Reset Filter
+      {/* 2. Compact KPI strip — click to filter by status */}
+      <div className="kpi-strip">
+        <button
+          type="button"
+          className={`kpi-tile total${statusFilter === "" ? " active" : ""}`}
+          onClick={() => handleStatus("")}
+          aria-pressed={statusFilter === ""}
+        >
+          <span className="kpi-tile-label">Total {resourceButtonLabel[resource]}</span>
+          <span className="kpi-tile-value">
+            {loading && grandTotal === 0 ? <span className="skeleton" style={{ width: 40, height: 22 }} /> : grandTotal}
+          </span>
+          <span className="kpi-tile-sub">Seluruh data aktif</span>
+        </button>
+        {kpiList.map(([status, cnt]) => {
+          const active = statusFilter === status
+          const tone = statusTone(status)
+          return (
+            <button
+              key={status}
+              type="button"
+              className={`kpi-tile${active ? " active" : ""}`}
+              onClick={() => handleStatus(active ? "" : status)}
+              aria-pressed={active}
+              style={active ? { borderLeftColor: tone } : undefined}
+            >
+              <span className="kpi-tile-label">
+                <span className="kpi-tile-dot" style={{ background: tone }} />
+                {status}
+              </span>
+              <span className="kpi-tile-value">
+                {loading && cnt === 0 ? <span className="skeleton" style={{ width: 30, height: 22 }} /> : cnt}
+              </span>
+              <span className="kpi-tile-sub">
+                {grandTotal > 0 ? `${((cnt / grandTotal) * 100).toFixed(1)}% of total` : "—"}
+              </span>
             </button>
-          </div>
-        )}
-        {error && <div className="error" style={{ flex: "1 1 100%", marginTop: 4 }}>{error}</div>}
+          )
+        })}
       </div>
 
-      {/* 5. Panel: section-header + table + pagination */}
+      {/* 3. Unified toolbar: search + filters + reset */}
+      <div className="toolbar-unified">
+        <div className="toolbar-search">
+          <RiSearchLine size={14} />
+          <input
+            className="input"
+            placeholder={`Cari ${title.toLowerCase()}...`}
+            value={q}
+            onChange={e => handleSearch(e.target.value)}
+          />
+        </div>
+        <select
+          className="input toolbar-select"
+          value={statusFilter}
+          onChange={e => handleStatus(e.target.value)}
+          aria-label="Status filter"
+        >
+          <option value="">Semua Status</option>
+          {Object.keys(statusCounts).sort().map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        {Object.entries(filterCounts).map(([key, counts]) => (
+          <select
+            key={key}
+            className="input toolbar-select"
+            value={extraFilters[key] ?? ""}
+            onChange={e => handleExtraFilter(key, e.target.value)}
+            aria-label={FILTER_LABELS[key] ?? key}
+          >
+            <option value="">{FILTER_LABELS[key] ?? key}</option>
+            {Object.keys(counts).sort().map(v => <option key={v} value={v}>{v} ({counts[v]})</option>)}
+          </select>
+        ))}
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => void load()}
+          disabled={loading}
+          title="Refresh"
+          aria-label="Refresh data"
+        >
+          <RiRefreshLine size={13} />
+        </button>
+        {hasAnyFilter && (
+          <button className="btn btn-ghost btn-sm" onClick={reset}>
+            <RiCloseLine size={13} /> Reset
+          </button>
+        )}
+      </div>
+
+      {error && <div className="error" style={{ marginBottom: 12 }}>{error}</div>}
+
+      {/* 4. Enterprise data grid */}
       <div className="panel">
-        {/* Section header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid var(--line)" }}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>Daftar {title}</span>
-          {total > 0 && <span style={{ fontSize: 12, color: "var(--muted)" }}>Menampilkan {startRow}–{endRow} dari {total} data</span>}
+          {total > 0 && !loading && (
+            <span className="pg-info">{startRow}–{endRow} dari {total}</span>
+          )}
         </div>
 
-        {/* Table */}
         <div className="table-wrap">
           {loading ? (
-            <div className="empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "52px 20px" }}>
-              <span className="spinner" style={{ width: 24, height: 24 }} />
+            <div className="empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "40px 20px" }}>
+              <span className="spinner" style={{ width: 22, height: 22 }} />
               <span>Memuat data...</span>
             </div>
           ) : rows.length === 0 ? (
             <div className="empty">
-              {hasAnyFilter ? "Tidak ada data yang sesuai filter." : "Belum ada data. Tambahkan record pertama untuk memulai."}
+              {hasAnyFilter ? (
+                <>
+                  <div className="empty-title">Tidak ada data yang sesuai filter</div>
+                  <div>Ubah kriteria pencarian atau reset filter untuk melihat semua data.</div>
+                  <div className="empty-actions">
+                    <button className="btn btn-secondary btn-sm" onClick={reset}>
+                      <RiCloseLine size={13} /> Reset Filter
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="empty-title">Belum ada data</div>
+                  <div>Tambahkan record pertama untuk memulai.</div>
+                  <div className="empty-actions">
+                    <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>
+                      <RiAddLine size={13} /> Tambah {resourceButtonLabel[resource]}
+                    </button>
+                    <label className="btn btn-secondary btn-sm">
+                      <RiUploadLine size={13} /> Import Excel
+                      <input hidden type="file" accept=".xlsx,.xls,.csv" onChange={e => { const f = e.target.files?.[0]; if (f) void importFile(f); e.currentTarget.value = "" }} />
+                    </label>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
-            <table>
+            <table className="table-enterprise">
               <thead>
                 <tr>
-                  <th style={{ width: 48, textAlign: "center" }}>No.</th>
+                  <th style={{ width: 44, textAlign: "center" }}>#</th>
                   {tableCols.map(f => <th key={f.key}>{f.label}</th>)}
                   <th style={{ width: 88 }}>Aksi</th>
                 </tr>
@@ -335,16 +380,20 @@ export function ResourceClient({ resource, title, fields, customForm }: { resour
                       <td key={f.key}>
                         {f.key === statusField
                           ? <StatusBadge value={String(row[f.key] ?? "—")} />
-                          : formatCell(row[f.key], f)}
+                          : MONO_FIELDS.has(f.key)
+                            ? <span className="mono">{formatCell(row[f.key], f)}</span>
+                            : formatCell(row[f.key], f)}
                       </td>
                     ))}
                     <td>
                       <div style={{ display: "flex", gap: 4 }}>
-                        <button className="btn btn-secondary" style={{ padding: "5px 8px" }} title="Edit" onClick={() => setEditing(row)}>
+                        <button className="btn btn-secondary btn-icon" title="Edit" onClick={() => setEditing(row)}>
                           <RiEditLine size={13} />
                         </button>
-                        <button className="btn btn-danger" style={{ padding: "5px 8px", minWidth: 29 }} title="Arsipkan" disabled={archivingId === String(row.id)} onClick={() => void archive(row)}>
-                          {archivingId === String(row.id) ? <span className="spinner" style={{ width: 13, height: 13, borderColor: "rgba(163,79,79,.2)", borderTopColor: "#A34F4F" }} /> : <RiDeleteBinLine size={13} />}
+                        <button className="btn btn-danger btn-icon" title="Arsipkan" disabled={archivingId === String(row.id)} onClick={() => void archive(row)}>
+                          {archivingId === String(row.id)
+                            ? <span className="spinner" style={{ width: 12, height: 12, borderColor: "rgba(220,38,38,.2)", borderTopColor: "var(--danger)" }} />
+                            : <RiDeleteBinLine size={13} />}
                         </button>
                       </div>
                     </td>
@@ -355,20 +404,19 @@ export function ResourceClient({ resource, title, fields, customForm }: { resour
           )}
         </div>
 
-        {/* Pagination */}
         {total > 0 && (
           <div className="pg-bar">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 12, color: "var(--muted)" }}>Tampilkan</span>
+              <span className="pg-info">Tampilkan</span>
               <select
                 className="input"
-                style={{ padding: "4px 8px", height: 32, width: "auto", minWidth: 0, fontSize: 12 }}
+                style={{ height: 30, width: "auto", minWidth: 0, fontSize: 12, padding: "0 24px 0 8px" }}
                 value={limit}
                 onChange={e => handleLimit(Number(e.target.value))}
               >
                 {LIMITS.map(n => <option key={n} value={n}>{n}</option>)}
               </select>
-              <span style={{ fontSize: 12, color: "var(--muted)" }}>data per halaman</span>
+              <span className="pg-info">per halaman</span>
             </div>
             <div className="pg-controls">
               <button className="pg-btn" disabled={page <= 1} onClick={() => handlePage(page - 1)}>
@@ -387,7 +435,6 @@ export function ResourceClient({ resource, title, fields, customForm }: { resour
         )}
       </div>
 
-      {/* Record modal */}
       {(adding || editing) && (
         customForm
           ? customForm({ initial: editing, onClose: () => { setAdding(false); setEditing(null) }, onSaved: () => { setAdding(false); setEditing(null); void load() } })
