@@ -52,3 +52,14 @@ describe("dashboard view-model helpers", () => {
     expect(formatDashboardDate("not-a-date")).toBe("—")
   })
 })
+it("builds the five dashboard KPI definitions from verified counts", async () => {
+  const { buildDashboardKpis } = await import("@/app/dashboard/dashboard-data")
+  expect(buildDashboardKpis({ sites: 4, sitesAktif: 3, cids: 2, cidsAktif: 1, fabs: 1, fabsOpen: 1, upgrades: 3, upgradesRequested: 2, maintenance: 2, maintenanceScheduled: 1 }))
+    .toMatchObject([
+      { module: "sites", total: 4, contextValue: 3 },
+      { module: "cids", total: 2, contextValue: 1 },
+      { module: "fabs", total: 1, contextValue: 1 },
+      { module: "upgrades", total: 3, contextValue: 2 },
+      { module: "maintenance", total: 2, contextValue: 1 },
+    ])
+})
