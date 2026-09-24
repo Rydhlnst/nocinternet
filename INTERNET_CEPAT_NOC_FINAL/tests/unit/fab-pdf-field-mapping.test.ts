@@ -13,7 +13,7 @@ const aggregate = {
   applicant: { name: "Budi Santoso", title: "Direktur", birthPlace: "Bandung", birthDate: "1985-04-20", phoneCode: "021", phoneNumber: "5550002", mobileCode: "+62", mobileNumber: "81200000001", idType: "KTP", idNumber: "3273010101850001", idExpiry: "2030-04-20" },
   financial_contact: { name: "Siti Aminah", title: "Manager", department: "Finance", email: "finance@contoh.co.id", phoneCode: "021", phoneNumber: "5550003", mobileCode: "+62", mobileNumber: "81200000002" },
   services: [
-    { sequence: 1, requested_rfs_date: "2026-02-01", technical_contact: { name: "Andi", title: "NOC Lead", department: "NOC", email: "noc@contoh.co.id", phoneCode: "021", phoneNumber: "5550004", mobileCode: "+62", mobileNumber: "81200000003" }, endpoints: [{ role: "origin", country: "Indonesia", companyName: "PT Contoh", address: "Jl. Asal 1", latitude: -6.2, longitude: 106.8 }, { role: "destination", country: "Singapore", companyName: "Contoh SG", address: "Marina 2", latitude: 1.29, longitude: 103.85 }] },
+    { sequence: 1, requested_rfs_date: "2026-02-01", technical_contact: { name: "Andi", title: "NOC Lead", department: "NOC", email: "noc@contoh.co.id", phoneCode: "021", phoneNumber: "5550004", mobileCode: "+62", mobileNumber: "81200000003" }, products: [{ category: "internet", product: "Dedicated", unit: "Mbps", quantity: "100" }], endpoints: [{ role: "origin", country: "Indonesia", companyName: "PT Contoh", address: "Jl. Asal 1", latitude: -6.2, longitude: 106.8 }, { role: "destination", country: "Singapore", companyName: "Contoh SG", address: "Marina 2", latitude: 1.29, longitude: 103.85 }] },
   ],
   billing: { billingAddress: "Jl. Tagihan 5", currency: "IDR", termMonths: 26, charges: [
     { type: "installation", description: "Setup", portAmount: "1000000", localAccessAmount: "500000", otherAmount: "0", subtotal: "1500000", vatAmount: "165000", total: "1665000" },
@@ -73,6 +73,11 @@ describe("buildFabFieldValues", () => {
     expect(text["undefined_281"]).toBe("1.665.000")
     expect(text["Port"]).toBe("2.000.000")
     expect(text["undefined_308"]).toBe("2.553.000")
+
+    // Type-of-service matrix — Dedicated row (checkbox 5) with UOM + Qty
+    expect(checks["Check Box5"]).toBe(true)
+    expect(dropdowns["Dedicated UOM1"]).toBe("Mbps")
+    expect(text["Qty11"]).toBe("100")
 
     // Billing / currency dropdown / documents
     expect(text["Alamat TagihanBilling Address"]).toBe("Jl. Tagihan 5")

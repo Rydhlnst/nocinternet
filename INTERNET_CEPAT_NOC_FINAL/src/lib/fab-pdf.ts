@@ -54,6 +54,38 @@ function readEndpoint(endpoint: Record<string, any> | null | undefined) {
   }
 }
 
+/**
+ * Type-of-service matrix. Each FAB product maps to one template row: a checkbox,
+ * a Product/Package/UOM dropdown and a Qty text field. Field names verified from
+ * the template geometry for the first service block; later blocks reuse the same
+ * names with the trailing block index swapped (resolved leniently at apply time).
+ * `box` is the checkbox number for service 1; service s uses (s-1)*15 + box.
+ */
+type ProductRow = { box: number; product?: string; pkg?: string; uom?: string; qty?: string }
+const PRODUCT_ROWS: Record<string, ProductRow> = {
+  "Leased Circuit": { box: 1, product: "Leased Circuit Product1", pkg: "Leased Circuit Package1", uom: "Leased Circuit UOM1", qty: "Qty1" },
+  "Ethernet Link": { box: 2, product: "Ethernet Link Product1", pkg: "Ethernet Link Package1", uom: "Ethernal Link UOM1", qty: "undefined_11" },
+  "IPVPN Link": { box: 3, product: "IPVPN Product1", pkg: "IPVPN Package1", uom: "IPVPN UOM1", qty: "undefined_111" },
+  "Leased Core": { box: 4, product: "Leased Core Product1", pkg: "Lased Core Package1", uom: "Leased Core UOM1", qty: "undefined_1111" },
+  "Dedicated": { box: 5, product: "Dedicated Product1", uom: "Dedicated UOM1", qty: "Qty11" },
+  "IP Transit": { box: 6, product: "IP Transit Product1", pkg: "IP Transit Package1", uom: "IP Transit UOM1", qty: "undefined_11111" },
+  "Broadband": { box: 7, product: "Broadband Product1", pkg: "Broadband Package1", uom: "Broadband UOM1", qty: "undefined_111111" },
+  "OTT Peering": { box: 8, product: "OTT Peering Product1", uom: "OTT Peering UOM1", qty: "undefined 11111111" },
+  "CDN Peering": { box: 9, product: "CDN Peering Product1", uom: "CDN Peering UOM1", qty: "undefined 111111111" },
+  "Transponder": { box: 10, product: "Transponder Product1", uom: "Transponder UOM1", qty: "Qty_111" },
+  "Media Hub": { box: 11, product: "Media Hub Product1", pkg: "Media Hub Package1", uom: "Media Hub UOM1", qty: "undefined_1111111111" },
+  "Collocation": { box: 12 },
+  "Manage Service": { box: 13, product: "Manage Service Product1", pkg: "Manage Package1", qty: "Qty_41" },
+  "Anti DDoS": { box: 14, product: "Anti DDOS Product1", pkg: "Anti DDOS Package", qty: "undefined_461" },
+  "Flexible Add On": { box: 15, product: "Flexible Product1", pkg: "Flexible Package1", qty: "undefined_501" },
+}
+
+function formatQuantity(value: unknown): string {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return value == null ? "" : String(value)
+  return Number.isInteger(num) ? String(num) : String(num)
+}
+
 function dateParts(value?: string | Date | null): [string, string, string] {
   if (!value) return ["", "", ""]
   const text = value instanceof Date ? value.toISOString().slice(0, 10) : String(value)
@@ -126,7 +158,8 @@ export function buildFabFieldValues(data: FabPdfData) {
 
   // ── Services (up to 5 blocks) ───────────────────────────────────────────────
   for (const service of data.services ?? []) {
-    const s = String(service.sequence ?? 1)
+    const seq = Number(service.sequence ?? 1)
+    const s = String(seq)
     const tech = readContact(service.technical_contact)
     put(`Penanggung Jawab TeknisiTechnical Person In Charge${s}`, tech.name)
     put(`EmailEmail${s}`, tech.title) // this box is the technical PIC "Job Title", despite its name
@@ -150,6 +183,20 @@ export function buildFabFieldValues(data: FabPdfData) {
       put("undefined_601", destination.longitude); put("undefined_611", destination.latitude)
     }
     putDate(`_4${s}`, service.requested_rfs_date)
+
+    // Type-of-service matrix: tick the product's checkbox and fill its Product/UOM/Qty.
+    const blockName = (base: string) => (seq === 1 ? base : base.replace(/1$/, s))
+    for (const product of service.products ?? []) {
+      const row = PRODUCT_ROWS[String(product.product)]
+      if (!row) continue
+      checks[`Check Box${(seq - 1) * 15 + row.box}`] = true
+      if (row.product) dropdowns[blockName(row.product)] = String(product.product)
+      if (row.uom && product.unit) dropdowns[blockName(row.uom)] = String(product.unit)
+      if (row.pkg && product.package) dropdowns[blockName(row.pkg)] = String(product.package)
+      if (seq === 1 && row.qty && product.quantity !== null && product.quantity !== undefined) {
+        put(row.qty, formatQuantity(product.quantity))
+      }
+    }
   }
 
   // ── Financial Person In Charge ──────────────────────────────────────────────
