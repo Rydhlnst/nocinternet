@@ -270,9 +270,11 @@ function applyText(form: ReturnType<PDFDocument["getForm"]>, index: Map<string, 
   if (!field) return
   try { field.setText(value) }
   catch {
-    // Comb fields reject values longer than their cell count; drop the constraint
-    // so long values (FAB number, phone numbers) still render.
-    try { field.removeMaxLength(); field.disableCombing(); field.setText(value) } catch { /* give up on this field */ }
+    // The value is longer than a comb field's cell count. Widen the comb to the
+    // value length so each character still gets its own box (digit-per-box), rather
+    // than clumping. Only if that also fails do we drop the comb entirely.
+    try { field.setMaxLength(value.length); field.setText(value) }
+    catch { try { field.removeMaxLength(); field.disableCombing(); field.setText(value) } catch { /* give up on this field */ } }
   }
 }
 
