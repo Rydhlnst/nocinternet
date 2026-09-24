@@ -24,3 +24,11 @@ describe("dashboard layout", () => {
     expect(tileRules.join("\n")).not.toContain("border-left")
   })
 })
+
+it("loads the enterprise overview server-side and retains a truthful error state", async () => {
+  const page = await readFile(resolve(process.cwd(), "src/app/dashboard/page.tsx"), "utf8")
+  expect(page).toContain("getDashboardViewModel")
+  expect(page).toContain("Operational Overview")
+  expect(page).toContain("Data dashboard belum dapat dimuat")
+  expect(page).not.toContain("Database terhubung")
+})

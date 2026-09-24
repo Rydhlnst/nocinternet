@@ -1,4 +1,4 @@
-import { Bell, ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { requireUser } from "@/lib/auth"
 import { Brand } from "@/components/brand"
 import { LogoutButton } from "./logout-button"
@@ -12,12 +12,12 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
     <aside className="sidebar">
       <div className="sidebar-brand"><Brand href="/dashboard" /></div>
       <DashboardNav />
-      <div className="sidebar-footer"><div className="sidebar-footer-status"><span className="status-dot" /> Systems operational</div><span>Internet Cepat NOC · 2026</span></div>
+      <div className="sidebar-footer"><div className="sidebar-footer-status">Operational workspace</div><span>Internet Cepat NOC · 2026</span></div>
     </aside>
     <main className="main">
       <header className="topbar">
         <div className="breadcrumb"><span>NOC Workspace</span><ChevronRight size={14} /><strong>Operations</strong></div>
-        <div className="topbar-actions"><button className="icon-button" aria-label="Notifications"><Bell size={17} /></button><div className="user-pill"><div className="avatar">{initial}</div><div className="user-meta"><strong>{user.fullName ?? "NOC Staff"}</strong><span>{user.email}</span></div><LogoutButton /></div></div>
+        <div className="topbar-actions"><div className="user-pill"><div className="avatar">{initial}</div><div className="user-meta"><strong>{user.fullName ?? "NOC Staff"}</strong><span>{user.email}</span></div><LogoutButton /></div></div>
       </header>
       {children}
     </main>
