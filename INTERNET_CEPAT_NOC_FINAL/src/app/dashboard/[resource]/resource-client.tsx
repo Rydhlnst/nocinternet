@@ -9,7 +9,7 @@ import {
   RiRefreshLine,
 } from "react-icons/ri"
 import { useToast } from "@/components/toast"
-import { DashboardValue } from "@/components/shared/dashboard-value"
+import { CellValue } from "@/components/shared/dashboard-value"
 import { schemas, siteSchema, validationMessage } from "@/lib/validation"
 import { resourceSubtitles, resourceButtonLabel } from "@/lib/types"
 import type { Resource, Field } from "@/lib/types"
@@ -371,7 +371,7 @@ export function ResourceClient({ resource, title, fields, customForm }: { resour
                       <td key={f.key}>
                         {f.key === statusField
                           ? <StatusBadge value={String(row[f.key] ?? "—")} />
-                          : <DashboardValue value={row[f.key]} format={f} mono={MONO_FIELDS.has(f.key)} />}
+                          : <CellValue value={row[f.key]} format={f} className={MONO_FIELDS.has(f.key) ? "mono" : undefined} />}
                       </td>
                     ))}
                     <td>
