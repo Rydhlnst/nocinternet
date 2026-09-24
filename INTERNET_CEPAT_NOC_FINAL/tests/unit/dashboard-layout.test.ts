@@ -32,3 +32,16 @@ it("loads the enterprise overview server-side and retains a truthful error state
   expect(page).toContain("Data dashboard belum dapat dimuat")
   expect(page).not.toContain("Database terhubung")
 })
+
+it("keeps the narrow-screen sidebar compact and horizontal", async () => {
+  const css = await readFile(globalsCss, "utf8")
+  expect(css).toMatch(/@media \(max-width: 960px\)\s*\{[\s\S]*?\.shell\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);/)
+  expect(css).toMatch(/@media \(max-width: 960px\)\s*\{[\s\S]*?\.nav-group\s*\{[^}]*display:\s*contents;/)
+})
+
+it("uses readable contrast for operational metadata", async () => {
+  const css = await readFile(globalsCss, "utf8")
+  for (const selector of [".ops-loaded", ".ops-kpi-copy small", ".ops-record-title small, .ops-recent-list time"]) {
+    expect(css).toMatch(new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{[^}]*color:var\\(--muted\\);`))
+  }
+})
