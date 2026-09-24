@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { formatFabDetailDate } from "@/lib/fab-detail-formatters"
 import { SERVICE_CATEGORIES, SERVICE_PRODUCTS } from "@/lib/fab-validation"
 
 type Row = { id: string; fab_number: string; company_name?: string | null; job_type?: string | null; requested_rfs_date?: string | null; workflow_status: string; operational_status: string; service_count: number }
@@ -76,7 +77,7 @@ type DetailBilling = { termMonths?: number | null; billingAddress?: string | nul
 type DetailDocument = { documentType?: string | null; verified?: boolean | null; verifiedAt?: string | null }
 
 const detailValue = (value: string | number | null | undefined) => value === null || value === undefined || value === "" ? "—" : String(value)
-const formatDate = (value: string | null | undefined) => value ? new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`)) : "—"
+const formatDate = formatFabDetailDate
 const formatCurrency = (value: string | number | null | undefined, currency = "IDR") => new Intl.NumberFormat("id-ID", { style: "currency", currency, maximumFractionDigits: 0 }).format(Number(value ?? 0))
 const maskIdentifier = (value: string | null | undefined) => { const text = value ?? ""; return text ? `${"•".repeat(Math.max(0, text.length - 4))}${text.slice(-4)}` : "—" }
 
