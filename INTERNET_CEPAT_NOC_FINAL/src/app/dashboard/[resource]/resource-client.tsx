@@ -9,6 +9,7 @@ import {
   RiRefreshLine,
 } from "react-icons/ri"
 import { useToast } from "@/components/toast"
+import { DashboardValue } from "@/components/shared/dashboard-value"
 import { schemas, siteSchema, validationMessage } from "@/lib/validation"
 import { resourceSubtitles, resourceButtonLabel } from "@/lib/types"
 import type { Resource, Field } from "@/lib/types"
@@ -38,16 +39,6 @@ const DEFAULT_STATUSES: Record<Resource, string[]> = {
 
 function schemaFor(r: Resource) { return r === "sites" ? siteSchema : schemas[r] }
 function fieldMessage(j: ApiError, fallback: string) { return j.details ? validationMessage(j.details) : (j.error ?? fallback) }
-
-function formatCell(value: unknown, field: Field): string {
-  if (value === null || value === undefined || value === "") return "—"
-  if (field.prefix) return `${field.prefix}${String(value).padStart(4, "0")}`
-  if (field.type === "date" && typeof value === "string" && value.includes("-")) {
-    const [y, m, d] = value.split("-")
-    return d && m && y ? `${d}/${m}/${y}` : value
-  }
-  return String(value)
-}
 
 function StatusBadge({ value }: { value: string }) {
   const slug = value.toLowerCase().replaceAll(" ", "-").replaceAll("_", "-")
@@ -380,9 +371,7 @@ export function ResourceClient({ resource, title, fields, customForm }: { resour
                       <td key={f.key}>
                         {f.key === statusField
                           ? <StatusBadge value={String(row[f.key] ?? "—")} />
-                          : MONO_FIELDS.has(f.key)
-                            ? <span className="mono">{formatCell(row[f.key], f)}</span>
-                            : formatCell(row[f.key], f)}
+                          : <DashboardValue value={row[f.key]} format={f} mono={MONO_FIELDS.has(f.key)} />}
                       </td>
                     ))}
                     <td>
