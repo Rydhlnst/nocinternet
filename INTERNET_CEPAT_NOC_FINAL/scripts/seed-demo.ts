@@ -62,7 +62,9 @@ async function main() {
   if (!admin) throw new Error("An active admin profile is required. Run db:seed-admin first.")
 
   const [existingFab] = await db.select({ id: fabs.id }).from(fabs).where(eq(fabs.fabNumber, fab.fab_number)).limit(1)
-  await saveFabGraph(db, admin, fab, existingFab?.id)
+  const savedFab = await saveFabGraph(db, admin, fab, existingFab?.id)
+  // Approve immediately so the official PDF is downloadable without a manual approval step.
+  await db.update(fabs).set({ workflowStatus: "approved", approvedAt: new Date(), approvedBy: admin.id }).where(eq(fabs.id, savedFab.id))
 
   for (const upgrade of validUpgrades) {
     const values = { siteId: upgrade.site_id, cidId: upgrade.cid_id ?? null, currentBandwidth: upgrade.current_bandwidth, requestedBandwidth: upgrade.requested_bandwidth, requestDate: upgrade.request_date ?? null, targetDate: upgrade.target_date ?? null, completionDate: upgrade.completion_date ?? null, status: upgrade.status, pic: upgrade.pic, notes: upgrade.notes ?? null }
@@ -78,7 +80,7 @@ async function main() {
     else await db.insert(maintenance).values(values)
   }
 
-  console.log("Demo seed complete: 3 sites, 3 CIDs, 1 complete FAB, 2 upgrades, and 2 maintenance records.")
+  console.log("Demo seed complete: 3 sites, 3 CIDs, 1 approved FAB (PDF ready), 2 upgrades, and 2 maintenance records.")
 }
 
 main().catch(error => {
