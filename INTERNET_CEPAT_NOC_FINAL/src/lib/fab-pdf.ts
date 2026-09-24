@@ -4,8 +4,6 @@ import { PDFCheckBox, PDFDocument, PDFDropdown, PDFTextField } from "pdf-lib"
 
 type FabPdfData = Record<string, any>
 
-const FINAL_ARTWORK_OFFSET_X = 22
-
 export function clearFabTemplateFields(form: ReturnType<PDFDocument["getForm"]>) {
   for (const field of form.getFields()) {
     if (field instanceof PDFTextField) field.setText("")
@@ -310,6 +308,5 @@ export async function renderFabPdf(data: FabPdfData) {
   for (const field of form.getFields()) if (field instanceof PDFTextField) field.enableMultiline()
   form.updateFieldAppearances()
   form.flatten()
-  for (const page of document.getPages()) page.translateContent(FINAL_ARTWORK_OFFSET_X, 0)
   return document.save()
 }
