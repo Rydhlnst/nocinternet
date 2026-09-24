@@ -60,4 +60,10 @@ describe("Database connectivity", () => {
     expect(row?.has_workflow_status).toBe(true)
     expect(row?.has_service_requests).toBe(true)
   }, 15000)
-})
+
+  it("OK DB-05 supports the interactive transaction required to save a FAB graph", async () => {
+    if (!hasDb) return
+    const db = getDb()
+    const result = await db.transaction(async tx => tx.execute(sql`SELECT 1 AS one`))
+    expect(result).toBeTruthy()
+  }, 15000)})
